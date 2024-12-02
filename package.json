@@ -1,0 +1,26 @@
+{
+  "dependencies": {
+    "@welshman/lib": "^0.0.26",
+    "@welshman/signer": "^0.0.14",
+    "@welshman/util": "^0.0.46",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "express-ws": "^5.0.2",
+    "mailgun-js": "^0.22.0",
+    "nostr-tools": "^2.10.3",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.13.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0"
+  }
+}
