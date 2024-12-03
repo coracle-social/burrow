@@ -109,7 +109,8 @@ const ejectUser = ({email}) =>
 
 const confirmEmail = ({email, confirm_token}) =>
   run(
-    'UPDATE users SET confirmed_at = unixepoch() WHERE email = ? AND confirm_token = ?',
+    `UPDATE users SET confirmed_at = unixepoch(), confirm_token = null
+     WHERE email = ? AND confirm_token = ? AND confirmed_at IS NULL`,
     [email, confirm_token],
   )
 
