@@ -17,9 +17,9 @@ const migrate = () => {
           encrypted_secret TEXT NOT NULL,
           user_ncryptsec TEXT NOT NULL,
           password_hash TEXT NOT NULL,
-          confirm_at INTEGER,
+          confirmed_at INTEGER,
           confirm_token TEXT,
-          reset_requested INTEGER,
+          reset_requested INTEGER NOT NULL DEFAULT (0),
           reset_token TEXT
         )
       `)
@@ -92,7 +92,7 @@ const createUser = async ({email, password}) => {
 
 const authenticateUser = async ({email, password}) =>
   get(
-    'SELECT email, confirm_at, confirm_token, encrypted_secret, password_hash FROM users WHERE email = ?',
+    'SELECT email, confirmed_at, confirm_token, encrypted_secret, password_hash FROM users WHERE email = ?',
     [email],
     async ({password_hash, ...user}) => {
       if (await bcrypt.compare(password, password_hash)) {
@@ -101,12 +101,15 @@ const authenticateUser = async ({email, password}) =>
     }
   )
 
+const userExists = async ({email}) =>
+  Boolean(await get('SELECT email FROM users WHERE email = ?', [email]))
+
 const ejectUser = ({email}) =>
   get('DELETE FROM users WHERE email = ? RETURNING user_ncryptsec', [email])
 
 const confirmEmail = ({email, confirm_token}) =>
   run(
-    'UPDATE users SET confirm_at = unixepoch() WHERE email = ? AND confirm_token = ?',
+    'UPDATE users SET confirmed_at = unixepoch() WHERE email = ? AND confirm_token = ?',
     [email, confirm_token],
   )
 
@@ -114,7 +117,8 @@ const requestReset = async ({email}) => {
   const reset_token = crypto.randomBytes(32).toString('hex')
 
   const success = await run(
-    'UPDATE users SET reset_requested = unixepoch(), reset_token = ? WHERE email = ?',
+    `UPDATE users SET reset_requested = unixepoch(), reset_token = ?
+     WHERE email = ? AND reset_requested < unixepoch('now', '-10 minute')`,
     [reset_token, email],
   )
 
@@ -124,7 +128,7 @@ const requestReset = async ({email}) => {
 const confirmReset = async ({email, password, reset_token}) =>
   get(
     `UPDATE users SET reset_requested = null, reset_token = null, password_hash = ?
-     WHERE email = ? AND reset_token = ? AND reset_requested > unixepoch('now', '-15 minute')
+     WHERE email = ? AND reset_token = ? AND reset_requested IS NOT NULL AND reset_requested > unixepoch('now', '-15 minute')
      RETURNING encrypted_secret`,
     [await bcrypt.hash(password, 14), email, reset_token],
     async ({encrypted_secret}) => {
@@ -163,4 +167,4 @@ const getSession = async (client_pubkey) => {
 const deleteSession = ({client_pubkey}) =>
   run('DELETE FROM sessions WHERE client_pubkey = ?', [client_pubkey])
 
-module.exports = {migrate, createUser, authenticateUser, ejectUser, createSession, confirmEmail, deleteSession, requestReset, confirmReset, getSession}
+module.exports = {migrate, createUser, authenticateUser, userExists, ejectUser, createSession, confirmEmail, deleteSession, requestReset, confirmReset, getSession}

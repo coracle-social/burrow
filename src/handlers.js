@@ -55,7 +55,7 @@ const handleUserDelete = async (req, res) => {
     return _err(res, 401, 'Invalid login information, please try again!')
   }
 
-  if (!user.confirm_at) {
+  if (!user.confirmed_at) {
     sendConfirmEmail(user)
 
     return _err(res, 400, 'Your email has not yet been confirmed. Please check your inbox.')
@@ -85,15 +85,17 @@ const handleEmailConfirm = async (req, res) => {
 const handleResetRequest = async (req, res) => {
   const {email} = req.body
 
+  if (!await userExists({email})) {
+    return _err(res, 400, "We weren't able to find an account with that email address.")
+  }
+
   const reset_token = await requestReset({email})
 
   if (reset_token) {
     sendResetEmail({email, reset_token})
-
-    return _ok(res)
-  } else {
-    return _err(res, 400, "We weren't able to find an account with that email address.")
   }
+
+  return _ok(res)
 }
 
 const handleResetConfirm = async (req, res) => {
@@ -121,7 +123,7 @@ const handleSessionCreate = async (req, res) => {
     return _err(res, 401, 'Invalid login information, please try again!')
   }
 
-  if (!user.confirm_at) {
+  if (!user.confirmed_at) {
     sendConfirmEmail(user)
 
     return _err(res, 400, 'Your email has not yet been confirmed. Please check your inbox.')
