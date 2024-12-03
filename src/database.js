@@ -150,7 +150,7 @@ const createSession = async ({email, client_pubkey, connect_secret, encrypted_se
     row => makeSession({...row, encrypted_secret})
   )
 
-const getSession = async (client_pubkey) => {
+const loadSession = async (client_pubkey) => {
   const success = await run(
     `UPDATE sessions SET last_used = unixepoch() WHERE client_pubkey = ?`,
     [client_pubkey],
@@ -168,4 +168,4 @@ const getSession = async (client_pubkey) => {
 const deleteSession = ({client_pubkey}) =>
   run('DELETE FROM sessions WHERE client_pubkey = ?', [client_pubkey])
 
-module.exports = {migrate, createUser, authenticateUser, userExists, ejectUser, createSession, confirmEmail, deleteSession, requestReset, confirmReset, getSession}
+module.exports = {migrate, createUser, authenticateUser, userExists, ejectUser, createSession, confirmEmail, deleteSession, requestReset, confirmReset, loadSession}

@@ -15,6 +15,8 @@ module.exports = {
   appSigner: Nip01Signer.fromSecret(process.env.BURROW_SECRET),
   CLIENT_DOMAIN: process.env.CLIENT_DOMAIN,
   CLIENT_NAME: process.env.CLIENT_NAME,
+  LOG_RELAY_MESSAGES: process.env.LOG_RELAY_MESSAGES === "true",
+  LOG_NIP46_MESSAGES: process.env.LOG_NIP46_MESSAGES === "true",
   MAILGUN_API_KEY: process.env.MAILGUN_API_KEY,
   MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN,
   PORT: process.env.PORT,

@@ -2,7 +2,7 @@ const {tryCatch} = require('@welshman/lib')
 const {appSigner} = require('./env')
 const {startSession} = require('./relay')
 const {sendConfirmEmail, sendEjectEmail, sendResetEmail} = require('./mailgun')
-const {createUser, authenticateUser, createSession, deleteSession, ejectUser, confirmEmail, requestReset, confirmReset} = require('./database')
+const {createUser, userExists, authenticateUser, createSession, deleteSession, ejectUser, confirmEmail, requestReset, confirmReset} = require('./database')
 
 const _err = (res, status, error) => res.status(status).send({error})
 
