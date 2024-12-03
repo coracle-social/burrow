@@ -1,7 +1,7 @@
 const enhanceServer = require('express-ws')
 const {decrypt} = require('@welshman/signer')
 const {NOSTR_CONNECT, matchFilters, createEvent} = require('@welshman/util')
-const {signer} = require('./env')
+const {appSigner} = require('./env')
 const {server} = require('./server')
 
 enhanceServer(server)
@@ -20,8 +20,8 @@ server.ws('/', socket => {
 
 const makeResponse = async (recipient, payload) => {
   const tags = [["p", recipient]]
-  const content = await signer.nip44.encrypt(recipient, JSON.stringify(payload))
-  const event = await signer.sign(createEvent(NOSTR_CONNECT, {tags, content}))
+  const content = await appSigner.nip44.encrypt(recipient, JSON.stringify(payload))
+  const event = await appSigner.sign(createEvent(NOSTR_CONNECT, {tags, content}))
 
   return event
 }
@@ -112,9 +112,9 @@ class Connection {
   }
 
   async onEVENT(event) {
-    const pubkey = await signer.getPubkey()
+    const pubkey = await appSigner.getPubkey()
 
-    console.log('EVENT', event, true)
+    console.log('EVENT', event)
 
     if (event.kind !== 24133) {
       return this.send(['OK', event.id, false, 'Only kind 24133 events are accepted'])
@@ -125,7 +125,7 @@ class Connection {
     }
 
     try {
-      event.content = decrypt(signer, event.pubkey, event.content)
+      event.content = decrypt(appSigner, event.pubkey, event.content)
     } catch (e) {
       return this.send(['OK', event.id, false, 'Failed to decrypt event content'])
     }

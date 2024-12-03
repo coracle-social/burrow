@@ -1,5 +1,5 @@
 const {tryCatch} = require('@welshman/lib')
-const {PUBKEY} = require('./env')
+const {appSigner} = require('./env')
 const {startSession} = require('./relay')
 const {sendConfirmEmail, sendEjectEmail, sendResetEmail} = require('./mailgun')
 const {createUser, authenticateUser, createSession, deleteSession, ejectUser, confirmEmail, requestReset, confirmReset} = require('./database')
@@ -8,14 +8,14 @@ const _err = (res, status, error) => res.status(status).send({error})
 
 const _ok = (res, status = 200) => res.status(status).send({ok: true})
 
-const handleNip11 = (req, res) => {
+const handleNip11 = async (req, res) => {
   res.set({'Content-Type': 'application/nostr+json'})
 
   res.json({
     name: "Burrow",
     icon: "https://pfp.nostr.build/dac9ef793790d3e360ef90f8a4fbbfc92250ef3f4e666bbf2760b40997d2bfbf.jpg",
     description: "A relay/bunker combo for adapting email/password login to nostr keys via NIP 46.",
-    pubkey: PUBKEY,
+    pubkey: await appSigner.getPubkey(),
     software: "https://github.com/coracle-social/burrow",
   })
 }
@@ -61,10 +61,10 @@ const handleUserDelete = async (req, res) => {
     return _err(res, 400, 'Your email has not yet been confirmed. Please check your inbox.')
   }
 
-  const ncryptsec = await ejectUser({email})
+  const {user_ncryptsec} = await ejectUser({email})
 
-  if (eject && ncryptsec) {
-    await sendEjectEmail({email, ncryptsec})
+  if (eject && user_ncryptsec) {
+    await sendEjectEmail({email, user_ncryptsec})
   }
 
   return _ok(res)
@@ -133,15 +133,10 @@ const handleSessionCreate = async (req, res) => {
     return _err(res, 400, 'Invalid nostrconnect URL.')
   }
 
+  const {encrypted_secret} = user
   const client_pubkey = url.host
   const connect_secret = url.searchParams.get('secret')
-  const session = await createSession({
-    email,
-    password,
-    client_pubkey,
-    connect_secret,
-    user_ncryptsec: user.ncryptsec,
-  })
+  const session = await createSession({email, client_pubkey, connect_secret, encrypted_secret})
 
   await startSession(session)
 

@@ -49,7 +49,7 @@ const sendResetEmail = ({email, reset_token}) => {
   })
 }
 
-const sendEjectEmail = ({email, ncryptsec}) => {
+const sendEjectEmail = ({email, user_ncryptsec}) => {
   send({
     from: `${CLIENT_NAME} <noreply@${MAILGUN_DOMAIN}>`,
     to: email,
@@ -57,14 +57,14 @@ const sendEjectEmail = ({email, ncryptsec}) => {
     html: `
       <h3>Thanks for using ${CLIENT_NAME}!</h3>
       <p>Please see below for your nostr private key:</p>
-      <p>${ncryptsec}</p>
+      <p>${user_ncryptsec}</p>
       <p>Note that this key is encrypted using the password you used to log in to ${CLIENT_NAME}.</p>
       <p>You will no longer be able to log in using your email and password. Instead, store your key securely and log in using a nostr signer app.</p>
     `,
     text: `
       Thanks for using ${CLIENT_NAME}!\n
       Please see below for your nostr private key:\n
-      ${ncryptsec}\n
+      ${user_ncryptsec}\n
       Note that this key is encrypted using the password you used to log in to ${CLIENT_NAME}.\n
       You will no longer be able to log in using your email and password. Instead, store your key securely and log in using a nostr signer app.
     `
