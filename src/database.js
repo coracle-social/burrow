@@ -1,4 +1,5 @@
 const sqlite3 = require('sqlite3')
+const crypto = require('crypto')
 const {hexToBytes} = require('@noble/hashes/utils')
 const nip49 = require('nostr-tools/nip49')
 const bcrypt = require('bcrypt')
@@ -18,7 +19,7 @@ const migrate = () => {
           password_hash TEXT NOT NULL,
           confirm_at INTEGER,
           confirm_token TEXT,
-          reset_by INTEGER,
+          reset_requested INTEGER,
           reset_token TEXT
         )
       `)
@@ -78,7 +79,7 @@ const createUser = async ({email, password}) => {
   const encrypted_secret = await encryptSecret(secret)
   const user_ncryptsec = await nip49.encrypt(hexToBytes(secret), password)
   const password_hash = await bcrypt.hash(password, 14)
-  const confirm_token = Math.random().toString().slice(2)
+  const confirm_token = crypto.randomBytes(32).toString('hex')
 
   await run(
     `INSERT INTO users (email, encrypted_secret, user_ncryptsec, password_hash, confirm_token)
@@ -110,10 +111,10 @@ const confirmEmail = ({email, confirm_token}) =>
   )
 
 const requestReset = async ({email}) => {
-  const reset_token = Math.random().toString().slice(2)
+  const reset_token = crypto.randomBytes(32).toString('hex')
 
   const success = await run(
-    'UPDATE users SET reset_by = unixepoch(), reset_token = ? WHERE email = ?',
+    'UPDATE users SET reset_requested = unixepoch(), reset_token = ? WHERE email = ?',
     [reset_token, email],
   )
 
@@ -122,8 +123,9 @@ const requestReset = async ({email}) => {
 
 const confirmReset = async ({email, password, reset_token}) =>
   get(
-    `UPDATE users SET reset_by = null, reset_token = null, password_hash = ?
-     WHERE email = ? AND reset_token = ? RETURNING encrypted_secret`,
+    `UPDATE users SET reset_requested = null, reset_token = null, password_hash = ?
+     WHERE email = ? AND reset_token = ? AND reset_requested > unixepoch('now', '-15 minute')
+     RETURNING encrypted_secret`,
     [await bcrypt.hash(password, 14), email, reset_token],
     async ({encrypted_secret}) => {
       const secret = await decryptSecret(encrypted_secret)
