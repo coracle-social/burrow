@@ -19,7 +19,7 @@ const migrate = () => {
           password_hash TEXT NOT NULL,
           confirmed_at INTEGER,
           confirm_token TEXT,
-          reset_requested INTEGER NOT NULL DEFAULT (0),
+          reset_requested INTEGER,
           reset_token TEXT
         )
       `)
@@ -119,7 +119,7 @@ const requestReset = async ({email}) => {
 
   const success = await run(
     `UPDATE users SET reset_requested = unixepoch(), reset_token = ?
-     WHERE email = ? AND reset_requested < unixepoch('now', '-10 minute')`,
+     WHERE email = ? AND COALESCE(reset_requested, 0) < unixepoch('now', '-10 minute')`,
     [reset_token, email],
   )
 
@@ -134,7 +134,7 @@ const confirmReset = async ({email, password, reset_token}) =>
     [await bcrypt.hash(password, 14), email, reset_token],
     async ({encrypted_secret}) => {
       const secret = await decryptSecret(encrypted_secret)
-      const user_ncryptsec = await nip49.encrypt(secret, password)
+      const user_ncryptsec = await nip49.encrypt(hexToBytes(secret), password)
 
       return run(
         `UPDATE users SET user_ncryptsec = ? WHERE email = ?`,
